@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>LifeOS — Personal Progress System</title>
+<style>
+:root{
+  --bg:#f6f7fb;--card:#fff;--text:#151923;--muted:#737b8c;--line:#e7e9ef;
+  --primary:#5d5fef;--primary2:#7b7df7;--ok:#28a66a;--warn:#f4a340;--danger:#e65757;
+  --shadow:0 10px 30px rgba(26,31,44,.08);--radius:22px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer}
+.app{min-height:100vh;display:grid;grid-template-columns:250px 1fr}
+.sidebar{background:#111522;color:#fff;padding:24px 18px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;font-size:22px;font-weight:800;margin:6px 8px 28px}
+.logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#7b7df7,#50d3a5);display:grid;place-items:center}
+.nav button{width:100%;border:0;background:transparent;color:#c8cede;padding:12px 14px;border-radius:13px;text-align:left;margin:4px 0;display:flex;align-items:center;gap:10px}
+.nav button.active,.nav button:hover{background:#202638;color:white}
+.sidebar .foot{position:absolute;left:18px;right:18px;bottom:20px;color:#8891a6;font-size:12px}
+main{padding:28px 30px 95px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:24px}
+.topbar h1{margin:0;font-size:28px}
+.sub{color:var(--muted);font-size:14px;margin-top:4px}
+.actions{display:flex;gap:10px;align-items:center}
+.btn{border:0;border-radius:14px;padding:11px 15px;background:#fff;box-shadow:var(--shadow);color:var(--text)}
+.btn.primary{background:var(--primary);color:white}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px}
+.span-4{grid-column:span 4}.span-5{grid-column:span 5}.span-6{grid-column:span 6}.span-7{grid-column:span 7}.span-8{grid-column:span 8}.span-12{grid-column:span 12}
+.card h3{margin:0 0 14px;font-size:17px}
+.stat{font-size:31px;font-weight:800}.muted{color:var(--muted)}
+.progress{height:9px;background:#eceefa;border-radius:999px;overflow:hidden;margin-top:10px}
+.progress>i{display:block;height:100%;background:linear-gradient(90deg,var(--primary),#7bd9ba);border-radius:999px}
+.task{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.task:last-child{border-bottom:0}
+.task input{width:18px;height:18px}
+.task .grow{flex:1}.task small{color:var(--muted)}
+.pill{font-size:12px;padding:5px 9px;border-radius:999px;background:#eef0ff;color:#4c4fc3}
+.time-row{display:grid;grid-template-columns:72px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.time{font-weight:700;color:#4b5262}
+.event{background:#f3f4ff;border-left:4px solid var(--primary);padding:10px 12px;border-radius:10px}
+.ai{background:linear-gradient(135deg,#171c2c,#262d43);color:#fff}
+.ai .muted{color:#aeb6ca}.ai-suggest{background:#ffffff12;border:1px solid #ffffff17;border-radius:15px;padding:13px;margin-top:10px}
+.area-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.area{border:1px solid var(--line);border-radius:18px;padding:16px;background:#fff}
+.area .emoji{font-size:26px}.area h4{margin:8px 0 5px}.area small{color:var(--muted)}
+.list{display:flex;flex-direction:column;gap:10px}
+.note{padding:14px;border:1px solid var(--line);border-radius:15px;background:#fff}
+.note img{max-width:100%;border-radius:12px;margin-top:10px}
+.empty{padding:18px;text-align:center;color:var(--muted);border:1px dashed #cfd4df;border-radius:14px}
+.fab{display:none;position:fixed;right:18px;bottom:82px;width:56px;height:56px;border-radius:50%;border:0;background:var(--primary);color:#fff;font-size:28px;box-shadow:var(--shadow)}
+.bottom{display:none}
+.modal{position:fixed;inset:0;background:#0c102099;display:none;align-items:center;justify-content:center;padding:18px;z-index:50}
+.modal.open{display:flex}
+.sheet{width:min(680px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:24px;padding:22px}
+.sheet h2{margin-top:0}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{display:flex;flex-direction:column;gap:7px}.field.full{grid-column:1/-1}
+.field label{font-size:13px;color:#5e6677;font-weight:600}
+.field input,.field textarea,.field select{border:1px solid #dfe3ea;border-radius:12px;padding:11px 12px;background:#fff}
+.field textarea{min-height:100px;resize:vertical}
+.sheet-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.hidden{display:none!important}
+.section-title{display:flex;justify-content:space-between;align-items:center;margin:4px 0 12px}
+.kpi{display:flex;align-items:center;gap:12px}.kpi-icon{width:44px;height:44px;border-radius:14px;background:#f0f1ff;display:grid;place-items:center;font-size:21px}
+.calendar-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.day{padding:10px;border-radius:12px;text-align:center;border:1px solid var(--line);background:#fff}
+.day.today{background:#22283a;color:white}
+.day b{display:block;margin-top:5px}
+.badge{display:inline-block;padding:4px 8px;border-radius:10px;font-size:11px;background:#f1f3f7;color:#677084}
+.toast{position:fixed;right:20px;top:20px;background:#151923;color:#fff;padding:12px 16px;border-radius:12px;opacity:0;transform:translateY(-10px);transition:.25s;z-index:99}
+.toast.show{opacity:1;transform:translateY(0)}
+@media(max-width:980px){
+ .app{grid-template-columns:1fr}.sidebar{display:none}main{padding:20px 16px 100px}
+ .span-4,.span-5,.span-6,.span-7,.span-8{grid-column:span 12}
+ .area-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .bottom{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);z-index:30}
+ .bottom button{border:0;background:#fff;padding:10px 4px 8px;font-size:11px;color:#727a8d}.bottom button span{display:block;font-size:20px;margin-bottom:2px}
+ .fab{display:block}
+}
+@media(max-width:560px){
+ .topbar{align-items:flex-start}.actions .btn:not(.primary){display:none}
+ .area-grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}
+ .calendar-strip{gap:5px}.day{padding:8px 2px;font-size:12px}
+}
+
+body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+a,button{-webkit-tap-highlight-color:transparent}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="logo">✦</div> LifeOS</div>
+    <div class="nav">
+      <button class="active" data-view="home">🏠 Home</button>
+      <button data-view="areas">🧩 Areas</button>
+      <button data-view="calendar">📅 Calendar</button>
+      <button data-view="notes">📝 Notes</button>
+      <button data-view="ai">✨ AI Coach</button>
+    </div>
+    <div class="foot">Your data is stored locally in this browser.</div>
+  </aside>
+
+  <main>
+    <section id="home" class="view">
+      <div class="topbar">
+        <div><h1>Good day, Asber 👋</h1><div class="sub" id="todayText"></div></div>
+        <div class="actions"><button class="btn" onclick="resetDemo()">Reset demo</button><button class="btn primary" onclick="openAdd()">＋ Add</button></div>
+      </div>
+
+      <div class="grid">
+        <div class="card span-4"><div class="kpi"><div class="kpi-icon">🎯</div><div><div class="muted">Goals completed</div><div class="stat" id="goalPct">0%</div></div></div><div class="progress"><i id="goalBar" style="width:0%"></i></div></div>
+        <div class="card span-4"><div class="kpi"><div class="kpi-icon">✅</div><div><div class="muted">Tasks today</div><div class="stat" id="taskCount">0/0</div></div></div></div>
+        <div class="card span-4"><div class="kpi"><div class="kpi-icon">🔥</div><div><div class="muted">Current streak</div><div class="stat" id="streak">4 days</div></div></div></div>
+
+        <div class="card span-7">
+          <div class="section-title"><h3>Today’s schedule</h3><button class="btn" onclick="openAdd('schedule')">Add event</button></div>
+          <div id="scheduleList"></div>
+        </div>
+        <div class="card span-5 ai">
+          <h3>✨ AI Coach</h3>
+          <div class="muted">Recommendations based on today’s plan.</div>
+          <div id="aiSuggestions"></div>
+        </div>
+
+        <div class="card span-7">
+          <div class="section-title"><h3>Today’s tasks</h3><button class="btn" onclick="openAdd('task')">Add task</button></div>
+          <div id="taskList"></div>
+        </div>
+        <div class="card span-5">
+          <h3>Next alarm</h3>
+          <div id="nextAlarm" class="empty">No alarms yet.</div>
+          <div style="margin-top:12px"><button class="btn primary" onclick="openAdd('alarm')">＋ Add alarm</button></div>
+        </div>
+
+        <div class="card span-12">
+          <div class="section-title"><h3>Life areas</h3><button class="btn" onclick="switchView('areas')">View all</button></div>
+          <div class="area-grid" id="areaPreview"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="areas" class="view hidden">
+      <div class="topbar"><div><h1>Life Areas</h1><div class="sub">Organize your goals and progress by category.</div></div><div class="actions"><button class="btn primary" onclick="openAdd('area')">＋ New area</button></div></div>
+      <div class="area-grid" id="areaGrid"></div>
+      <div style="margin-top:18px">
+        <button class="btn primary" onclick="openAdd('area')">＋ Add another area</button>
+      </div>
+    </section>
+
+    <section id="calendar" class="view hidden">
+      <div class="topbar"><div><h1>Calendar & Schedule</h1><div class="sub">Plan your day and connect tasks with reminders.</div></div><div class="actions"><button class="btn primary" onclick="openAdd('schedule')">＋ Event</button></div></div>
+      <div class="card">
+        <div class="calendar-strip" id="weekStrip"></div>
+      </div>
+      <div class="grid" style="margin-top:18px">
+        <div class="card span-8"><h3>Today</h3><div id="calendarEvents"></div></div>
+        <div class="card span-4"><h3>Alarms & reminders</h3><div id="alarmList"></div></div>
+      </div>
+    </section>
+
+    <section id="notes" class="view hidden">
+      <div class="topbar"><div><h1>Notes & Journal</h1><div class="sub">Save reflections, ideas, progress notes, and photos.</div></div><div class="actions"><button class="btn primary" onclick="openAdd('note')">＋ Note</button></div></div>
+      <div class="list" id="notesList"></div>
+    </section>
+
+    <section id="ai" class="view hidden">
+      <div class="topbar"><div><h1>AI Coach</h1><div class="sub">A planning assistant that helps you decide what to do next.</div></div></div>
+      <div class="grid">
+        <div class="card span-7 ai">
+          <h3>Today’s coaching</h3>
+          <div id="aiPage"></div>
+        </div>
+        <div class="card span-5">
+          <h3>Talk to your AI Coach</h3>
+          <div class="muted" style="margin-bottom:10px">
+            Ask questions or tell it to change your system.
+          </div>
+          <div class="field">
+            <textarea id="aiQuestion" placeholder="Examples:
+add area Prayer
+rename Money to Finance
+add task Read Psalm 23 in Psalms
+add alarm Workout at 7:00 AM
+delete area Goals"></textarea>
+          </div>
+          <button class="btn primary" style="margin-top:12px" onclick="askCoach()">Send</button>
+          <div id="aiAnswer" style="margin-top:14px"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<button class="fab" onclick="openAdd()">＋</button>
+<nav class="bottom">
+  <button onclick="switchView('home')"><span>🏠</span>Home</button>
+  <button onclick="switchView('areas')"><span>🧩</span>Areas</button>
+  <button onclick="openAdd()"><span>➕</span>Add</button>
+  <button onclick="switchView('calendar')"><span>📅</span>Calendar</button>
+  <button onclick="switchView('ai')"><span>✨</span>AI</button>
+</nav>
+
+<div class="modal" id="modal">
+  <div class="sheet">
+    <h2>Add something</h2>
+    <div class="field">
+      <label>What do you want to add?</label>
+      <select id="typeSelect" onchange="renderForm()">
+        <option value="task">Task</option>
+        <option value="goal">Goal</option>
+        <option value="schedule">Schedule event</option>
+        <option value="alarm">Alarm</option>
+        <option value="note">Note / journal</option>
+        <option value="area">Life area</option>
+      </select>
+    </div>
+    <div id="dynamicForm" style="margin-top:14px"></div>
+    <div class="sheet-actions"><button class="btn" onclick="closeAdd()">Cancel</button><button class="btn primary" onclick="saveItem()">Save</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY='lifeos-v1';
+const demo = {
+  areas:[
+    {id:1,emoji:'💪',name:'Muscles',desc:'Strength, exercises, personal records',progress:62},
+    {id:2,emoji:'🏃',name:'Fitness',desc:'Weight, steps, workouts, measurements',progress:48},
+    {id:3,emoji:'💰',name:'Money',desc:'Income, expenses, savings and goals',progress:35},
+    {id:4,emoji:'📖',name:'Psalms',desc:'Reading, memorization and reflections',progress:70},
+    {id:5,emoji:'🎯',name:'Goals',desc:'Personal and long-term goals',progress:55}
+  ],
+  tasks:[
+    {id:11,title:'Upper body workout',area:'Muscles',done:false},
+    {id:12,title:'Read 2 Psalms',area:'Psalms',done:true},
+    {id:13,title:'Review weekly spending',area:'Money',done:false}
+  ],
+  goals:[
+    {id:21,title:'Workout 4x this week',progress:50},
+    {id:22,title:'Memorize Psalm 23',progress:70},
+    {id:23,title:'Save $500',progress:40}
+  ],
+  schedule:[
+    {id:31,time:'06:30',title:'Prayer / Psalms',area:'Psalms'},
+    {id:32,time:'07:00',title:'Workout',area:'Muscles'},
+    {id:33,time:'18:00',title:'Personal goal work',area:'Goals'}
+  ],
+  alarms:[
+    {id:41,time:'07:00',title:'Workout',repeat:'Daily',enabled:true},
+    {id:42,time:'21:00',title:'Read Psalms',repeat:'Daily',enabled:true}
+  ],
+  notes:[
+    {id:51,title:'Weekly reflection',body:'Focus on consistency instead of trying to make every day perfect.',date:new Date().toLocaleDateString()}
+  ]
+};
+let data = load();
+
+function load(){ try{return JSON.parse(localStorage.getItem(KEY))||structuredClone(demo)}catch(e){return structuredClone(demo)} }
+function save(){localStorage.setItem(KEY,JSON.stringify(data));renderAll()}
+function resetDemo(){data=structuredClone(demo);save();toast('Demo data reset')}
+
+function switchView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===id));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>switchView(b.dataset.view));
+
+function todayLabel(){
+ const d=new Date(); return d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+}
+document.getElementById('todayText').textContent=todayLabel();
+
+function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function renderAll(){
+ renderStats(); renderTasks(); renderSchedule(); renderAreas(); renderAlarms(); renderNotes(); renderWeek(); renderAI();
+}
+function renderStats(){
+ const total=data.goals.length; const avg=total?Math.round(data.goals.reduce((a,g)=>a+(+g.progress||0),0)/total):0;
+ goalPct.textContent=avg+'%'; goalBar.style.width=avg+'%';
+ const done=data.tasks.filter(t=>t.done).length; taskCount.textContent=done+'/'+data.tasks.length;
+}
+function renderTasks(){
+ taskList.innerHTML=data.tasks.length?data.tasks.map(t=>`<div class="task">
+ <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${t.id})">
+ <div class="grow"><b>${esc(t.title)}</b><br><small>${esc(t.area||'General')}</small></div>
+ <span class="pill">${t.done?'Done':'To do'}</span></div>`).join(''):'<div class="empty">No tasks yet.</div>';
+}
+function toggleTask(id){let t=data.tasks.find(x=>x.id===id); if(t){t.done=!t.done;save();toast(t.done?'Task completed 🎉':'Task reopened')}}
+function renderSchedule(){
+ const sorted=[...data.schedule].sort((a,b)=>a.time.localeCompare(b.time));
+ const html=sorted.length?sorted.map(e=>`<div class="time-row"><div class="time">${formatTime(e.time)}</div><div class="event"><b>${esc(e.title)}</b><div class="muted">${esc(e.area||'General')}</div></div></div>`).join(''):'<div class="empty">Nothing scheduled yet.</div>';
+ scheduleList.innerHTML=html; calendarEvents.innerHTML=html;
+}
+function formatTime(t){let [h,m]=t.split(':').map(Number);let ap=h>=12?'PM':'AM';let hh=h%12||12;return `${hh}:${String(m).padStart(2,'0')} ${ap}`}
+function renderAreas(){
+ const cards=data.areas.map(a=>`<div class="area"><div class="emoji">${esc(a.emoji||'⭐')}</div><h4>${esc(a.name)}</h4><small>${esc(a.desc||'')}</small><div class="progress"><i style="width:${Math.max(0,Math.min(100,+a.progress||0))}%"></i></div><small>${a.progress||0}% progress</small></div>`).join('');
+ areaGrid.innerHTML=(cards||'')+`<div class="area" onclick="openAdd('area')" style="cursor:pointer;border-style:dashed;display:grid;place-items:center;min-height:150px;text-align:center"><div><div class="emoji">➕</div><h4>Add Area</h4><small>Create a new part of your system</small></div></div>`;
+ areaPreview.innerHTML=data.areas.slice(0,6).map(a=>`<div class="area"><div class="emoji">${esc(a.emoji||'⭐')}</div><h4>${esc(a.name)}</h4><div class="progress"><i style="width:${a.progress||0}%"></i></div><small>${a.progress||0}%</small></div>`).join('');
+}
+function renderAlarms(){
+ alarmList.innerHTML=data.alarms.length?data.alarms.map(a=>`<div class="task"><div class="grow"><b>${formatTime(a.time)} — ${esc(a.title)}</b><br><small>${esc(a.repeat||'Once')}</small></div><button class="btn" onclick="toggleAlarm(${a.id})">${a.enabled?'On':'Off'}</button></div>`).join(''):'<div class="empty">No alarms.</div>';
+ const enabled=data.alarms.filter(a=>a.enabled).sort((a,b)=>a.time.localeCompare(b.time));
+ nextAlarm.innerHTML=enabled.length?`<b style="font-size:26px">${formatTime(enabled[0].time)}</b><br><span class="muted">${esc(enabled[0].title)} · ${esc(enabled[0].repeat)}</span>`:'No alarms enabled.';
+}
+function toggleAlarm(id){let a=data.alarms.find(x=>x.id===id);if(a){a.enabled=!a.enabled;save()}}
+function renderNotes(){
+ notesList.innerHTML=data.notes.length?data.notes.map(n=>`<div class="note"><b>${esc(n.title)}</b><div class="muted" style="margin:5px 0 9px">${esc(n.date||'')}</div><div>${esc(n.body)}</div></div>`).join(''):'<div class="empty">No notes yet.</div>';
+}
+function renderWeek(){
+ const now=new Date(); let html='';
+ for(let i=0;i<7;i++){let d=new Date(now);d.setDate(now.getDate()-now.getDay()+i);html+=`<div class="day ${d.toDateString()===now.toDateString()?'today':''}"><span>${d.toLocaleDateString(undefined,{weekday:'short'})}</span><b>${d.getDate()}</b></div>`}
+ weekStrip.innerHTML=html;
+}
+function suggestions(){
+ let s=[]; const undone=data.tasks.filter(t=>!t.done);
+ if(undone.length) s.push(`You have ${undone.length} unfinished task${undone.length>1?'s':''}. Start with “${undone[0].title}.”`);
+ const low=[...data.areas].sort((a,b)=>(a.progress||0)-(b.progress||0))[0];
+ if(low) s.push(`${low.name} is currently your lowest-progress area at ${low.progress||0}%. Consider one small action there today.`);
+ const done=data.tasks.filter(t=>t.done).length;
+ if(done) s.push(`Nice progress: you already completed ${done} task${done>1?'s':''} today.`);
+ if(!s.length) s.push('Your day is clear. Add one meaningful task connected to an important goal.');
+ return s;
+}
+function renderAI(){
+ const s=suggestions();
+ aiSuggestions.innerHTML=s.slice(0,3).map(x=>`<div class="ai-suggest">${esc(x)}</div>`).join('');
+ aiPage.innerHTML=s.map(x=>`<div class="ai-suggest">${esc(x)}</div>`).join('')+
+ `<div class="ai-suggest"><b>Things you can tell me to change:</b><br>
+ “add area Prayer”<br>
+ “rename Money to Finance”<br>
+ “add task Walk 30 minutes in Fitness”<br>
+ “set Fitness progress to 60%”<br>
+ “add alarm Workout at 7:00 AM”</div>`+
+ `<div class="ai-suggest"><b>Planning principle:</b><br>Plan → Schedule → Alarm → Do → Track → Review → Improve.</div>`;
+}
+function askCoach(){
+ const raw=aiQuestion.value.trim();
+ const q=raw.toLowerCase();
+ let a='';
+ if(!raw){
+   a='Tell me what you want to change, or ask me about your goals, tasks, schedule, or what to focus on.';
+ } else {
+   const actionResult = runAICommand(raw);
+   if(actionResult){
+     a=actionResult;
+     save();
+   } else if(q.includes('focus')||q.includes('today')) {
+     a=suggestions()[0];
+   } else if(q.includes('money')) {
+     a='For Money, choose one concrete action: log today’s spending, review a bill, or move a planned amount into savings.';
+   } else if(q.includes('psalm')||q.includes('bible')) {
+     a='Keep it small and consistent: schedule a short Psalm reading block and attach one reflection note afterward.';
+   } else if(q.includes('workout')||q.includes('fitness')||q.includes('muscle')) {
+     a='Use your next open block for the planned workout. If time is short, do a smaller session instead of skipping completely.';
+   } else {
+     a='I can currently edit areas, tasks, alarms, schedule events, and notes with simple commands. Try: “add area Prayer”, “rename Money to Finance”, or “add task Read Psalm 23 in Psalms”.';
+   }
+ }
+ aiAnswer.innerHTML=`<div class="note"><b>Coach:</b><br>${esc(a)}</div>`;
+}
+
+function normalizeTimeText(s){
+  s=s.trim().toUpperCase();
+  const m=s.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/);
+  if(!m) return null;
+  let h=+m[1], min=+(m[2]||0), ap=m[3];
+  if(ap){
+    if(h===12) h=0;
+    if(ap==='PM') h+=12;
+  }
+  if(h<0||h>23||min<0||min>59) return null;
+  return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
+}
+
+function findAreaByName(name){
+  return data.areas.find(a=>a.name.toLowerCase()===name.trim().toLowerCase());
+}
+
+function runAICommand(raw){
+  let m;
+
+  m=raw.match(/^(?:add|create|make)\s+(?:an?\s+)?area\s+(?:called\s+|named\s+)?(.+)$/i);
+  if(m){
+    const name=m[1].trim();
+    if(findAreaByName(name)) return `The area “${name}” already exists.`;
+    data.areas.push({id:Date.now(),emoji:'⭐',name,desc:'Created by AI Coach',progress:0});
+    return `Done. I added the area “${name}”.`;
+  }
+
+  m=raw.match(/^rename\s+(?:area\s+)?(.+?)\s+to\s+(.+)$/i);
+  if(m){
+    const from=m[1].trim(), to=m[2].trim();
+    const area=findAreaByName(from);
+    if(!area) return `I couldn't find an area named “${from}”.`;
+    area.name=to;
+    data.tasks.forEach(t=>{if((t.area||'').toLowerCase()===from.toLowerCase()) t.area=to;});
+    data.schedule.forEach(e=>{if((e.area||'').toLowerCase()===from.toLowerCase()) e.area=to;});
+    return `Done. I renamed “${from}” to “${to}”.`;
+  }
+
+  m=raw.match(/^(?:delete|remove)\s+(?:the\s+)?(?:area\s+)?(.+)$/i);
+  if(m){
+    const name=m[1].trim();
+    const idx=data.areas.findIndex(a=>a.name.toLowerCase()===name.toLowerCase());
+    if(idx!==-1){
+      data.areas.splice(idx,1);
+      return `Done. I removed the area “${name}”.`;
+    }
+  }
+
+  m=raw.match(/^(?:add|create)\s+(?:a\s+)?task\s+(.+?)(?:\s+in\s+(.+))?$/i);
+  if(m){
+    const title=m[1].trim(), area=(m[2]||'General').trim();
+    data.tasks.unshift({id:Date.now(),title,area,done:false});
+    return `Done. I added the task “${title}”${area!=='General'?` in ${area}`:''}.`;
+  }
+
+  m=raw.match(/^(?:complete|finish|mark done)\s+(?:the\s+)?(?:task\s+)?(.+)$/i);
+  if(m){
+    const name=m[1].trim().toLowerCase();
+    const task=data.tasks.find(t=>t.title.toLowerCase()===name);
+    if(!task) return `I couldn't find the task “${m[1].trim()}”.`;
+    task.done=true;
+    return `Done. I marked “${task.title}” complete.`;
+  }
+
+  m=raw.match(/^(?:add|create|set)\s+(?:an?\s+)?alarm\s+(.+?)\s+at\s+(.+)$/i);
+  if(m){
+    const title=m[1].trim(), time=normalizeTimeText(m[2]);
+    if(!time) return `I couldn't understand the alarm time. Try something like “7:00 AM”.`;
+    data.alarms.push({id:Date.now(),title,time,repeat:'Daily',enabled:true});
+    return `Done. I added a daily alarm for “${title}” at ${formatTime(time)}.`;
+  }
+
+  m=raw.match(/^(?:add|schedule)\s+(?:an?\s+)?(?:event\s+)?(.+?)\s+at\s+(.+)$/i);
+  if(m && !/\balarm\b/i.test(raw)){
+    const title=m[1].trim(), time=normalizeTimeText(m[2]);
+    if(time){
+      data.schedule.push({id:Date.now(),title,time,area:'General'});
+      return `Done. I scheduled “${title}” at ${formatTime(time)}.`;
+    }
+  }
+
+  m=raw.match(/^(?:add|create|write)\s+(?:a\s+)?note\s+(.+)$/i);
+  if(m){
+    const body=m[1].trim();
+    data.notes.unshift({id:Date.now(),title:'AI note',body,date:new Date().toLocaleDateString()});
+    return `Done. I saved that as a note.`;
+  }
+
+  m=raw.match(/^set\s+(.+?)\s+(?:area\s+)?progress\s+to\s+(\d{1,3})%?$/i);
+  if(m){
+    const area=findAreaByName(m[1].trim());
+    if(!area) return `I couldn't find an area named “${m[1].trim()}”.`;
+    const p=Math.max(0,Math.min(100,+m[2]));
+    area.progress=p;
+    return `Done. I set ${area.name} progress to ${p}%.`;
+  }
+
+  return null;
+}
+function openAdd(type){
+ modal.classList.add('open'); if(type) typeSelect.value=type; renderForm();
+}
+function closeAdd(){modal.classList.remove('open')}
+modal.addEventListener('click',e=>{if(e.target===modal)closeAdd()})
+function renderForm(){
+ const t=typeSelect.value;
+ let f='';
+ if(t==='task') f=`<div class="form-grid"><div class="field full"><label>Task</label><input id="fTitle" placeholder="e.g. Upper body workout"></div><div class="field"><label>Area</label><input id="fArea" placeholder="Fitness"></div></div>`;
+ if(t==='goal') f=`<div class="form-grid"><div class="field full"><label>Goal</label><input id="fTitle" placeholder="e.g. Save $500"></div><div class="field"><label>Progress %</label><input id="fProgress" type="number" min="0" max="100" value="0"></div></div>`;
+ if(t==='schedule') f=`<div class="form-grid"><div class="field full"><label>Event</label><input id="fTitle" placeholder="e.g. Workout"></div><div class="field"><label>Time</label><input id="fTime" type="time" value="18:00"></div><div class="field"><label>Area</label><input id="fArea" placeholder="Muscles"></div></div>`;
+ if(t==='alarm') f=`<div class="form-grid"><div class="field full"><label>Alarm label</label><input id="fTitle" placeholder="e.g. Read Psalms"></div><div class="field"><label>Time</label><input id="fTime" type="time" value="07:00"></div><div class="field"><label>Repeat</label><select id="fRepeat"><option>Daily</option><option>Weekdays</option><option>Weekends</option><option>Once</option></select></div><div class="field full"><small class="muted">Prototype note: browser notifications require permission and may not behave like a native phone alarm when the browser is closed.</small></div></div>`;
+ if(t==='note') f=`<div class="form-grid"><div class="field full"><label>Title</label><input id="fTitle" placeholder="Reflection"></div><div class="field full"><label>Writing</label><textarea id="fBody" placeholder="Write anything here..."></textarea></div></div>`;
+ if(t==='area') f=`<div class="form-grid"><div class="field"><label>Emoji</label><input id="fEmoji" value="⭐"></div><div class="field"><label>Name</label><input id="fTitle" placeholder="New area"></div><div class="field full"><label>Description</label><input id="fBody" placeholder="What do you want to track?"></div><div class="field"><label>Starting progress %</label><input id="fProgress" type="number" min="0" max="100" value="0"></div></div>`;
+ dynamicForm.innerHTML=f;
+}
+function val(id){return document.getElementById(id)?.value?.trim()||''}
+function saveItem(){
+ const t=typeSelect.value, title=val('fTitle'); if(!title){toast('Please add a title');return}
+ const id=Date.now();
+ if(t==='task') data.tasks.unshift({id,title,area:val('fArea')||'General',done:false});
+ if(t==='goal') data.goals.unshift({id,title,progress:+val('fProgress')||0});
+ if(t==='schedule') data.schedule.push({id,title,time:val('fTime')||'12:00',area:val('fArea')||'General'});
+ if(t==='alarm') data.alarms.push({id,title,time:val('fTime')||'07:00',repeat:val('fRepeat')||'Daily',enabled:true});
+ if(t==='note') data.notes.unshift({id,title,body:val('fBody'),date:new Date().toLocaleDateString()});
+ if(t==='area') data.areas.push({id,emoji:val('fEmoji')||'⭐',name:title,desc:val('fBody'),progress:+val('fProgress')||0});
+ save(); closeAdd(); toast('Saved');
+ if(t==='alarm') requestNotify();
+}
+function requestNotify(){
+ if('Notification' in window && Notification.permission==='default') Notification.requestPermission();
+}
+function toast(msg){
+ const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1800)
+}
+renderForm();renderAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+Open the LifeOS_Android folder itself in Android Studio.
+See README.md for the steps.
